@@ -1,0 +1,16 @@
+# Credenciais locais (use o .env.example como modelo)
+.env
+
+# Logs e temporários
+*.log
+*.tmp
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores / IDEs
+.idea/
+.vscode/
+*.swp

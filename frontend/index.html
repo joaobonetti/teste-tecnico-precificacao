@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar — Precificação de Serviços</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="pagina-login">
+    <div class="caixa-login">
+      <div class="marca-login">
+        <h1>Precificação de Serviços</h1>
+        <p class="suave">Cálculo de preços com regras parametrizáveis</p>
+      </div>
+
+      <div class="cartao">
+        <form id="form-login" novalidate>
+          <div class="alerta-caixa erro oculto" role="alert"></div>
+
+          <div class="campo">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" autocomplete="username" required autofocus>
+          </div>
+
+          <div class="campo">
+            <label for="senha">Senha</label>
+            <input id="senha" name="senha" type="password" autocomplete="current-password" required>
+          </div>
+
+          <button class="botao" type="submit">Entrar</button>
+        </form>
+      </div>
+
+      <div class="alerta-caixa info pequeno">
+        <strong>Usuários de demonstração</strong><br>
+        Administrador: admin@precificacao.local / admin123<br>
+        Operador: operador@precificacao.local / operador123
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // Se já houver sessão ativa, vai direto para o sistema
+    Api.get('/auth/me').then(() => { window.location.href = 'app.html'; }).catch(() => {});
+
+    const form = document.getElementById('form-login');
+
+    form.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      limparErrosFormulario(form);
+
+      const botao = form.querySelector('button[type="submit"]');
+      await comBotaoOcupado(botao, async () => {
+        try {
+          await Api.post('/auth/login', {
+            email: form.email.value.trim(),
+            senha: form.senha.value,
+          });
+          window.location.href = 'app.html';
+        } catch (erro) {
+          mostrarErrosFormulario(form, erro);
+          form.senha.value = '';
+          form.senha.focus();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

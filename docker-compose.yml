@@ -1,0 +1,77 @@
+# =====================================================================
+# Orquestração — 3 containers:
+#   db       → MySQL 8.4 (carrega database/*.sql na primeira subida)
+#   backend  → PHP 8.3 + Apache (API REST)
+#   frontend → Nginx (telas + proxy de /api para o backend)
+#
+# Subir:   docker compose up -d --build
+# Acessar: http://localhost:8080
+# Zerar o banco (reexecuta schema + seed): docker compose down -v
+# =====================================================================
+services:
+
+  db:
+    image: mysql:8.4
+    container_name: precificacao-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-precificacao}
+      MYSQL_USER: ${DB_USER:-app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+      TZ: America/Sao_Paulo
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=-03:00
+    volumes:
+      # Scripts executados em ordem alfabética SOMENTE se o banco estiver vazio
+      - ./database:/docker-entrypoint-initdb.d:ro
+      # Dados persistem entre reinícios dos containers
+      - db_data:/var/lib/mysql
+    ports:
+      # Exposto apenas para inspeção com um cliente SQL (DBeaver, Workbench).
+      # Porta 3307 no host para não conflitar com um MySQL local.
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: precificacao-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-precificacao}
+      DB_USER: ${DB_USER:-app}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      # 1 = mostra o erro técnico na resposta da API (desenvolvimento)
+      # 0 = só mensagem genérica (produção / entrega final)
+      APP_DEBUG: ${APP_DEBUG:-0}
+      TZ: America/Sao_Paulo
+    depends_on:
+      db:
+        condition: service_healthy   # só sobe depois que o MySQL responder
+    # Sem "ports": a API não fica exposta diretamente, só via Nginx.
+
+  frontend:
+    image: nginx:1.27-alpine
+    container_name: precificacao-frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

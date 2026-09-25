@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Precificação de Serviços</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ================= Cabeçalho ================= -->
+  <header class="topo">
+    <div class="marca">Precificação de Serviços <small>regras parametrizáveis</small></div>
+    <div class="usuario">
+      <span id="usuario-nome"></span>
+      <span id="usuario-perfil" class="etiqueta"></span>
+      <button id="botao-sair" class="botao claro pequeno" type="button">Sair</button>
+    </div>
+  </header>
+
+  <nav class="abas" aria-label="Seções do sistema">
+    <button type="button" data-aba="calculo">Cálculo</button>
+    <button type="button" data-aba="regras">Regras</button>
+    <button type="button" data-aba="cadastros">Cadastros</button>
+    <button type="button" data-aba="historico">Histórico</button>
+  </nav>
+
+  <main>
+
+    <!-- ================= ABA: CÁLCULO ================= -->
+    <section id="aba-calculo" class="aba oculto">
+      <div class="cartao">
+        <h2>Calcular preço</h2>
+        <form id="form-calculo" novalidate>
+          <div class="alerta-caixa erro oculto" role="alert"></div>
+          <div class="grade">
+            <div class="campo">
+              <label for="calc-servico">Serviço</label>
+              <select id="calc-servico" name="servico_id" required></select>
+              <span class="erro-campo oculto" data-erro="servico_id"></span>
+            </div>
+            <div class="campo">
+              <label for="calc-categoria">Categoria do cliente</label>
+              <select id="calc-categoria" name="categoria_id" required></select>
+              <span class="erro-campo oculto" data-erro="categoria_id"></span>
+            </div>
+            <div class="campo">
+              <label for="calc-regiao">Região</label>
+              <select id="calc-regiao" name="regiao_id" required></select>
+              <span class="erro-campo oculto" data-erro="regiao_id"></span>
+            </div>
+            <div class="campo">
+              <label for="calc-quantidade">Quantidade</label>
+              <input id="calc-quantidade" name="quantidade" type="number" min="1" step="1" value="1" required>
+              <span class="erro-campo oculto" data-erro="quantidade"></span>
+            </div>
+          </div>
+          <div style="margin-top:1rem">
+            <button class="botao" type="submit">Calcular</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="resultado-calculo"></div>
+    </section>
+
+    <!-- ================= ABA: REGRAS ================= -->
+    <section id="aba-regras" class="aba oculto">
+      <div class="cartao">
+        <div class="cartao-cabecalho">
+          <div>
+            <h2>Regras de cálculo</h2>
+            <p class="suave pequeno" style="margin:0">
+              Executadas em ordem de prioridade (menor número primeiro). Todas as condições de uma regra precisam ser atendidas.
+            </p>
+          </div>
+          <div class="acoes">
+            <select id="filtro-regras" aria-label="Filtrar regras" style="width:auto">
+              <option value="">Todas</option>
+              <option value="1">Somente ativas</option>
+              <option value="0">Somente inativas</option>
+            </select>
+            <button id="botao-nova-regra" class="botao somente-admin" type="button">+ Nova regra</button>
+          </div>
+        </div>
+        <div id="lista-regras" class="tabela-rolagem"></div>
+      </div>
+    </section>
+
+    <!-- ================= ABA: CADASTROS ================= -->
+    <section id="aba-cadastros" class="aba oculto">
+      <div class="subabas" id="subabas-cadastro"></div>
+      <div class="cartao">
+        <div class="cartao-cabecalho">
+          <h2 id="titulo-cadastro"></h2>
+          <button id="botao-novo-cadastro" class="botao somente-admin" type="button">+ Novo</button>
+        </div>
+        <div id="lista-cadastro" class="tabela-rolagem"></div>
+      </div>
+    </section>
+
+    <!-- ================= ABA: HISTÓRICO ================= -->
+    <section id="aba-historico" class="aba oculto">
+      <div class="cartao">
+        <div class="cartao-cabecalho">
+          <h2>Histórico de cálculos</h2>
+          <button id="botao-atualizar-historico" class="botao secundario" type="button">Atualizar</button>
+        </div>
+        <p class="suave pequeno">Clique em um cálculo para ver a memória completa, exatamente como foi calculada na época.</p>
+        <div id="lista-historico" class="tabela-rolagem"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= MODAL: REGRA ================= -->
+  <dialog id="modal-regra">
+    <form id="form-regra" novalidate method="dialog">
+      <div class="modal-cabecalho">
+        <h2 id="titulo-modal-regra">Regra</h2>
+        <button class="fechar" type="button" data-fechar aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="alerta-caixa erro oculto" role="alert"></div>
+
+        <h3>Identificação</h3>
+        <div class="grade">
+          <div class="campo">
+            <label for="regra-codigo">Código</label>
+            <input id="regra-codigo" name="codigo" maxlength="20" placeholder="automático">
+            <span class="erro-campo oculto" data-erro="codigo"></span>
+          </div>
+          <div class="campo" style="grid-column: span 2">
+            <label for="regra-nome">Nome</label>
+            <input id="regra-nome" name="nome" maxlength="150" required>
+            <span class="erro-campo oculto" data-erro="nome"></span>
+          </div>
+        </div>
+        <div class="campo" style="margin-top:1rem">
+          <label for="regra-descricao">Descrição</label>
+          <input id="regra-descricao" name="descricao" maxlength="255">
+          <span class="erro-campo oculto" data-erro="descricao"></span>
+        </div>
+
+        <h3 style="margin-top:1.5rem">Quando (condições — todas devem ser atendidas)</h3>
+        <div id="lista-condicoes"></div>
+        <span class="erro-campo oculto" data-erro="condicoes"></span>
+        <button id="botao-add-condicao" class="botao secundario pequeno" type="button">+ Adicionar condição</button>
+        <p class="suave pequeno" style="margin-top:.5rem">Sem condições, a regra vale para todos os cálculos.</p>
+
+        <h3 style="margin-top:1.5rem">Aplicar (ação)</h3>
+        <div class="grade">
+          <div class="campo">
+            <label for="regra-tipo-acao">Tipo</label>
+            <select id="regra-tipo-acao" name="tipo_acao">
+              <option value="DESCONTO">Desconto</option>
+              <option value="ACRESCIMO">Acréscimo</option>
+            </select>
+            <span class="erro-campo oculto" data-erro="tipo_acao"></span>
+          </div>
+          <div class="campo">
+            <label for="regra-tipo-valor">Forma</label>
+            <select id="regra-tipo-valor" name="tipo_valor">
+              <option value="PERCENTUAL">Percentual (%)</option>
+              <option value="VALOR_FIXO">Valor fixo (R$)</option>
+            </select>
+            <span class="erro-campo oculto" data-erro="tipo_valor"></span>
+          </div>
+          <div class="campo">
+            <label for="regra-valor">Valor</label>
+            <input id="regra-valor" name="valor" type="number" min="0" step="0.01" required>
+            <span class="erro-campo oculto" data-erro="valor"></span>
+          </div>
+        </div>
+
+        <h3 style="margin-top:1.5rem">Controle</h3>
+        <div class="grade">
+          <div class="campo">
+            <label for="regra-prioridade">Prioridade</label>
+            <input id="regra-prioridade" name="prioridade" type="number" min="0" step="1" value="100">
+            <span class="ajuda">Menor número executa primeiro.</span>
+            <span class="erro-campo oculto" data-erro="prioridade"></span>
+          </div>
+          <div class="campo">
+            <label for="regra-vig-ini">Vigência — início</label>
+            <input id="regra-vig-ini" name="vigencia_inicio" type="date">
+            <span class="erro-campo oculto" data-erro="vigencia_inicio"></span>
+          </div>
+          <div class="campo">
+            <label for="regra-vig-fim">Vigência — fim</label>
+            <input id="regra-vig-fim" name="vigencia_fim" type="date">
+            <span class="erro-campo oculto" data-erro="vigencia_fim"></span>
+          </div>
+        </div>
+        <div style="margin-top:1rem; display:flex; gap:1.5rem; flex-wrap:wrap">
+          <label class="check"><input type="checkbox" name="interromper"> Interromper: se aplicada, as regras seguintes não são avaliadas</label>
+          <label class="check" id="grupo-ativa"><input type="checkbox" name="ativa" checked> Regra ativa</label>
+        </div>
+      </div>
+      <div class="modal-rodape">
+        <button class="botao secundario" type="button" data-fechar>Cancelar</button>
+        <button class="botao" type="submit" id="botao-salvar-regra">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= MODAL: HISTÓRICO DA REGRA ================= -->
+  <dialog id="modal-historico-regra">
+    <div class="modal-cabecalho">
+      <h2 id="titulo-historico-regra">Histórico de alterações</h2>
+      <button class="fechar" type="button" data-fechar aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-corpo" id="conteudo-historico-regra"></div>
+  </dialog>
+
+  <!-- ================= MODAL: CADASTRO ================= -->
+  <dialog id="modal-cadastro">
+    <form id="form-cadastro" novalidate method="dialog">
+      <div class="modal-cabecalho">
+        <h2 id="titulo-modal-cadastro">Cadastro</h2>
+        <button class="fechar" type="button" data-fechar aria-label="Fechar">&times;</button>
+      </div>
+      <div class="modal-corpo">
+        <div class="alerta-caixa erro oculto" role="alert"></div>
+        <div id="campos-cadastro" class="grade"></div>
+      </div>
+      <div class="modal-rodape">
+        <button class="botao secundario" type="button" data-fechar>Cancelar</button>
+        <button class="botao" type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= MODAL: DETALHE DE CÁLCULO ================= -->
+  <dialog id="modal-calculo">
+    <div class="modal-cabecalho">
+      <h2 id="titulo-modal-calculo">Cálculo</h2>
+      <button class="fechar" type="button" data-fechar aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-corpo" id="conteudo-modal-calculo"></div>
+  </dialog>
+
+  <script src="js/api.js"></script>
+  <script src="js/calculo.js"></script>
+  <script src="js/regras.js"></script>
+  <script src="js/cadastros.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
