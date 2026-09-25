@@ -4,8 +4,6 @@ Solução Full Stack para o teste técnico de **Desenvolvedor Full Stack — EMT
 
 O sistema calcula o valor final de serviços a partir de um **valor base** ajustado por **regras cadastradas no banco de dados** (condições + ação), e não por condições escritas no código. Um usuário autorizado cria, altera, ativa e desativa regras pela própria aplicação, e a mudança vale imediatamente para os próximos cálculos, sem recompilar nem alterar código.
 
-> **Requisito principal atendido:** alterar o desconto de clientes Estratégicos com quantidade > 50 de **5% para 7%** é feito pela tela *Regras → Editar*. O cálculo do exemplo do enunciado passa de **R$ 209,00** para **R$ 204,60**, e a alteração fica registrada no histórico de auditoria.
-
 ---
 
 ## Sumário
@@ -53,8 +51,6 @@ docker compose ps
 
 Acesse: **http://localhost:8080**
 
-Na primeira subida, o MySQL executa automaticamente `database/01_schema.sql` (estrutura) e `database/02_seed.sql` (dados do enunciado).
-
 ### Comandos úteis
 
 | Comando | Para quê |
@@ -89,8 +85,6 @@ docker compose up -d        # sem --build: usa a imagem do backend já carregada
 |---|---|---|---|
 | **Administrador** | `admin@precificacao.local` | `admin123` | Tudo: cadastros, regras, cálculos |
 | **Operador** | `operador@precificacao.local` | `operador123` | Consulta e executa cálculos |
-
-> ⚠️ Senhas de demonstração. Em produção, devem ser trocadas.
 
 ### Roteiro de verificação rápida
 
@@ -379,21 +373,18 @@ Códigos HTTP usados: 200, 201, 400 (requisição malformada), 401 (sem login), 
 
 | Decisão | Justificativa |
 |---|---|
-| **PHP 8.3 puro, sem framework** | A lógica central (roteamento, validação, motor) fica explícita e explicável. Um framework esconderia justamente o que o teste avalia. Sem dependências externas: nada de Composer para instalar |
+| **PHP 8.3 puro, sem framework** | A lógica central (roteamento, validação, motor) fica explícita e explicável. Um framework esconderia isso. Sem dependências externas: nada de Composer para instalar |
 | **MySQL 8.4 (LTS)** | Suporte a `JSON` (memória e auditoria), `DECIMAL` exato e CHECK constraints |
 | **Nginx na frente + proxy `/api`** | Front e API na **mesma origem**: sem CORS e com o cookie de sessão funcionando naturalmente. O backend não expõe porta |
-| **Frontend em HTML/JS/CSS puros, sem CDN** | Funciona **offline** (a VM de demonstração pode estar sem internet) e dispensa etapa de build |
+| **Frontend em HTML/JS/CSS puros, sem CDN** | Funciona **offline** e dispensa etapa de build |
 | **Motor como função pura** | Testável sem banco; controller busca os dados, motor só calcula |
 | **Operadores em lista fechada (whitelist)** | As regras são dados interpretados, nunca código executado (sem `eval`) |
 | **bcmath para dinheiro** | Precisão decimal exata, sem centavos "fantasmas" |
 | **Editor de regras dirigido por metadados** | A tela monta campos e operadores a partir de `/api/regras/metadados`. Um operador novo no motor aparece na tela sem alterar o frontend |
-| **Roteamento no Apache (`FallbackResource`) em vez de `.htaccess`** | Não depende de arquivo oculto (frequentemente perdido no Windows) e evita a busca de `.htaccess` a cada requisição |
 | **Raiz pública = `backend/public`** | Apenas o `index.php` é acessível; `config/` e `src/` ficam fora do alcance da web |
 | **Controle de acesso declarado na rota** | Cada rota diz se é pública, logada ou admin. Nenhum controller precisa lembrar de checar permissão |
 | **Validação que acumula erros (422)** | O usuário vê todos os problemas de uma vez, cada um no seu campo |
 | **Transações** | Regra, condições e auditoria são gravadas juntas, ou nada é gravado |
-| **Configuração por variáveis de ambiente** | O mesmo código roda em qualquer ambiente; senhas fora do código (`.env`) |
-| **Fuso horário fixo (−03:00)** | Datas consistentes entre MySQL, PHP e auditoria |
 
 ---
 
@@ -403,10 +394,9 @@ Códigos HTTP usados: 200, 201, 400 (requisição malformada), 401 (sem login), 
 
 - **SQL injection:** PDO com *prepared statements* reais (`EMULATE_PREPARES = false`); nomes de tabelas e colunas vêm de constantes, nunca do usuário; filtro de colunas graváveis.
 - **Injeção de código:** operadores e campos em lista fechada; sem `eval`.
-- **XSS:** todo dado exibido passa pela função `esc()` no frontend (testado com um nome contendo `<img onerror=...>`).
 - **Autenticação:** senhas com `password_hash` (bcrypt); novo ID de sessão no login (contra *session fixation*); cookie `HttpOnly` + `SameSite=Strict`; mesma mensagem e mesmo tempo de resposta para e-mail inexistente e senha errada (não revela usuários cadastrados).
-- **Autorização:** verificada na API (403). Esconder botões no frontend é só conveniência.
-- **Exposição de informações:** `display_errors=Off`, versões do PHP/Apache/Nginx ocultas, erros técnicos apenas no log (`APP_DEBUG=0`), cabeçalhos `X-Frame-Options` e `X-Content-Type-Options`.
+- **Autorização:** verificada na API (403).
+- **Exposição de informações:** `display_errors=Off`, versões do PHP/Apache/Nginx ocultas, erros técnicos apenas no log (`APP_DEBUG=0`).
 - **Integridade:** validação na aplicação + CHECK/UNIQUE/FK no banco; faixas de utilização sem sobreposição.
 
 ### Manutenção
@@ -465,7 +455,7 @@ Resultado esperado: `✅ 25 testes, todos passaram.`
 
 ### Manuais
 
-A API e as telas foram verificadas de ponta a ponta: login, cálculos, criação/edição/desativação de regras, auditoria, validações (422), duplicidade (409), permissões (403), sessão (401), sobreposição de faixas, proteção contra XSS e layout em tela de celular. O roteiro da [seção 2](#roteiro-de-verificação-rápida) reproduz os principais casos.
+A API e as telas foram verificadas de ponta a ponta: login, cálculos, criação/edição/desativação de regras, auditoria, validações (422), duplicidade (409), permissões (403), sessão (401). O roteiro da [seção 2](#roteiro-de-verificação-rápida) reproduz os principais casos.
 
 ---
 
